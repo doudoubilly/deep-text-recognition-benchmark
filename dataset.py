@@ -182,8 +182,9 @@ class LmdbDataset(Dataset):
 
 class RawDataset(Dataset):
 
-    def __init__(self, root, opt):
+    def __init__(self, root, opt, transform=None):
         self.opt = opt
+        self.trans = transform
         self.image_path_list = []
         for dirpath, dirnames, filenames in os.walk(root):
             for name in filenames:
@@ -214,7 +215,61 @@ class RawDataset(Dataset):
             else:
                 img = Image.new('L', (self.opt.imgW, self.opt.imgH))
 
+        if self.trans is not None:
+            img = self.trans(img)
+
         return (img, self.image_path_list[index])
+
+
+class TxtDataset(Dataset):
+
+    def __init__(self, root, txt_file, opt, transform=None):
+
+        self.root = root
+        self.opt = opt
+        self.trans = transform
+        self.fnames = []
+        self.labels = []
+
+        if not os.path.isfile(txt_file):
+            exit('Txt path: %s dose not exist' % txt_file)
+
+        with open(txt_file, 'r', encoding='utf-8') as f:  # absolute path
+            lines = f.readlines()
+            self.nSamples = len(lines)
+
+        for line in lines:
+            splited = line.strip('\n').split('\t')  # avoid space
+            self.fnames.append(splited[0])
+            self.labels.append(splited[1])
+
+    def __len__(self):
+        return self.nSamples
+
+    def __getitem__(self, index):
+        assert index <= len(self), 'index range error'
+        fname = self.fnames[index]
+        label = self.labels[index]
+
+        fpath = os.path.join(self.root, fname)
+        try:
+            if self.opt.rgb:
+                img = Image.open(fpath).convert('RGB')  # for color image
+            else:
+                img = Image.open(fpath).convert('L')
+        except IOError:
+            print('Corrupted image for %s' % fpath)
+            return self[(index+1) % self.__len__()]
+
+        if self.trans is not None:
+            img = self.trans(img)
+        if not self.opt.sensitive:
+            label = label.lower()
+
+        # out_of_char = f'[^{self.opt.character}]'
+        # label = re.sub(out_of_char, '', label)
+
+        return img, label
 
 
 class ResizeNormalize(object):

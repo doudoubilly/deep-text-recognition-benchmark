@@ -65,7 +65,7 @@ def benchmark_all_eval(model, criterion, converter, opt, calculate_infer_time=Fa
     return None
 
 
-def validation(model, criterion, evaluation_loader, converter, opt):
+def validation(model, criterion, evaluation_loader, converter, opt, max_iter=100):
     """ validation or evaluation """
     for p in model.parameters():
         p.requires_grad = False
@@ -77,6 +77,8 @@ def validation(model, criterion, evaluation_loader, converter, opt):
     valid_loss_avg = Averager()
 
     for i, (image_tensors, labels) in enumerate(evaluation_loader):
+        if i == max_iter:
+            break
         batch_size = image_tensors.size(0)
         length_of_data = length_of_data + batch_size
         with torch.no_grad():

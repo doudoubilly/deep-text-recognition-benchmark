@@ -10,6 +10,11 @@ from dataset import RawDataset, AlignCollate
 from model import Model
 
 
+def rotate180(img):
+    img = img.rotate(180, expand=True)
+    return img
+
+
 def demo(opt):
     """ model configuration """
     if 'CTC' in opt.Prediction:
@@ -35,7 +40,7 @@ def demo(opt):
 
     # prepare data. two demo images from https://github.com/bgshih/crnn#run-demo
     AlignCollate_demo = AlignCollate(imgH=opt.imgH, imgW=opt.imgW, keep_ratio_with_pad=opt.PAD)
-    demo_data = RawDataset(root=opt.image_folder, opt=opt)  # use RawDataset
+    demo_data = RawDataset(root=opt.image_folder, opt=opt, transform=rotate180)  # use RawDataset
     demo_loader = torch.utils.data.DataLoader(
         demo_data, batch_size=opt.batch_size,
         shuffle=False,
